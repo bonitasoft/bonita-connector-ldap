@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.stream.Stream;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -257,13 +257,9 @@ public class LdapConnector extends AbstractConnector {
         if (attributes == null || "".equals(attributes.trim())) {
             this.attributes = null;
         } else {
-            final StringTokenizer tokens = new StringTokenizer(attributes, ",");
-            int i = 0;
-            this.attributes = new String[tokens.countTokens()];
-            while (tokens.hasMoreElements()) {
-                this.attributes[i] = (String) tokens.nextElement();
-                i++;
-            }
+            this.attributes = Stream.of(attributes.split(","))
+                    .map(String::trim)
+                    .toArray(String[]::new);
         }
     }
 
@@ -507,7 +503,8 @@ public class LdapConnector extends AbstractConnector {
             try {
                 LdapDereferencingAlias.valueOf(derefAliases);
             } catch (final IllegalArgumentException e) {
-                throw new ConnectorValidationException(String.format("%s is not a valid dereferencing alias.", derefAliases));
+                throw new ConnectorValidationException(
+                        String.format("%s is not a valid dereferencing alias.", derefAliases));
             }
         }
 

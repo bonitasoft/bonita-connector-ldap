@@ -20,6 +20,7 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.assertj.core.api.Assertions;
 import org.bonitasoft.engine.connector.ConnectorValidationException;
 import org.bonitasoft.engine.exception.BonitaException;
 
@@ -34,7 +35,8 @@ public class LdapConnectorTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         if (LdapConnectorTest.LOG.isLoggable(Level.WARNING)) {
-            LdapConnectorTest.LOG.warning("======== Starting test: " + this.getClass().getName() + "." + this.getName() + "() ==========");
+            LdapConnectorTest.LOG.warning(
+                    "======== Starting test: " + this.getClass().getName() + "." + this.getName() + "() ==========");
         }
     }
 
@@ -55,10 +57,6 @@ public class LdapConnectorTest extends TestCase {
         connector.setFilter("(cn=*o*)");
         return connector;
     }
-
-    
-
-    
 
     public void testValidate() {
         connector = new LdapConnector();
@@ -310,6 +308,14 @@ public class LdapConnectorTest extends TestCase {
         connector.validateInputParameters();
     }
 
+    public void testSetAttributes() throws ConnectorValidationException {
+        connector = getBasicSettings();
+        connector.setAttributes("dn,objectclass ,ou");
+        connector.validateInputParameters();
+
+        Assertions.assertThat(connector.getAttributes()).contains("dn", "objectclass", "ou");
+    }
+
     public void testSetNullSizeLimit() {
         connector = getBasicSettings();
         connector.setSizeLimit(null);
@@ -356,13 +362,6 @@ public class LdapConnectorTest extends TestCase {
             assertThat(e.getMessage(), containsString("filter"));
         }
     }
-
-    
-
-    
-
-    
-    
 
     public void testSetTimeLimitWithANegativeValue() {
         connector = getBasicSettings();
@@ -444,53 +443,4 @@ public class LdapConnectorTest extends TestCase {
         connector.setReferralHandling("follow");
         connector.validateInputParameters();
     }
-
-    
-
-  /*public void testGetEmailFromUserIDWithSSLSupport() {
-    connector = getSSLDirectoryServiceSettings();
-    connector.setBaseObject("ou=people,dc=bonita,dc=org");
-    connector.setFilter("(uid=doej)");
-    connector.setAttributes(new String[] {"mail"});
-    connector.setScope(LdapScope.SUBTREE);
-    execute();
-    assertEquals(1, connector.getLdapAttributeList().size());
-    LdapAttribute expected = new LdapAttribute("mail", "john.doe@bonita.org");
-    LdapAttribute actual = connector.getLdapAttributeList().get(0).get(0);
-    assertEquals(expected.getName(), actual.getName());
-    assertEquals(expected.getValue(), actual.getValue());
-  }
-
-  public void testGetEmailFromUserIDWithSSLSupportAndCertificate() throws Exception {
-    connector = getSSLDirectoryServiceSettings();
-    connector.setBaseObject("ou=people,dc=bonita,dc=org");
-    connector.setFilter("(uid=doej)");
-    connector.setAttributes(new String[] {"mail"});
-    connector.setScope(LdapScope.SUBTREE);
-    connector.setCertificatePath("E:\\truststore");
-    connector.executeConnector();
-    assertEquals(25, connector.getResult().length());
-    String result = "mail" + Connector.KEY_VALUE_SEPARATOR
-    + "john.doe@bonita.org";
-    assertEquals(result, connector.getResult());
-  }
-
-  public void testGetEmailFromUserIDWithTLSSupport() {
-    connector = getDirectoryServiceSettings();
-    connector.setBaseObject("ou=people,dc=bonita,dc=org");
-    connector.setFilter("(uid=doej)");
-    connector.setProtocol(LdapProtocol.TLS);
-    connector.setAttributes(new String[] {"mail"});
-    connector.setScope(LdapScope.SUBTREE);
-    execute();
-    assertEquals(1, connector.getLdapAttributeList().size());
-    LdapAttribute expected = new LdapAttribute("mail", "john.doe@bonita.org");
-    LdapAttribute actual = connector.getLdapAttributeList().get(0).get(0);
-    assertEquals(expected.getName(), actual.getName());
-    assertEquals(expected.getValue(), actual.getValue());
-  }
-
-  public void testSearchWithAliasDereferencing() {
-    //TODO
-  }*/
 }
