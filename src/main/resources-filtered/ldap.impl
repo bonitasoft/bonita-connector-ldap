@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<implementation:connectorImplementation xmlns:implementation="http://www.bonitasoft.org/ns/connector/implementation/6.0">
+	<implementationId>${connector-impl-id}</implementationId>
+	<implementationVersion>${connector-impl-version}</implementationVersion>
+	<implementationClassname>org.bonitasoft.connectors.ldap.LdapConnector</implementationClassname>
+	<definitionId>${connector-definition-id}</definitionId>
+	<definitionVersion>${connector-definition-version}</definitionVersion>
+    <description>Execute a LDAP query. Based on default JRE LDAP implementation</description>
+	
+
+<!-- retrieved from the pom.xml at build time -->
+${connector-dependencies}
+
+</implementation:connectorImplementation>
