@@ -2,7 +2,7 @@
 <implementation:connectorImplementation xmlns:implementation="http://www.bonitasoft.org/ns/connector/implementation/6.0">
 	
 	<definitionId>ldap</definitionId>
-	<definitionVersion>1.0.0</definitionVersion>
+	<definitionVersion>1.1.0</definitionVersion>
     <description>Execute a LDAP query. Based on Bonita 5 implementation</description>
 	<implementationClassname>org.bonitasoft.connectors.ldap.LdapConnector</implementationClassname>
 	<implementationId>ldap</implementationId>

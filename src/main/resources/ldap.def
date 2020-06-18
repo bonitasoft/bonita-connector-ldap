@@ -2,7 +2,7 @@
 <definition:ConnectorDefinition xmlns:definition="http://www.bonitasoft.org/ns/connector/definition/6.1"
                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<id>ldap</id>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 	<icon>ldap.png</icon>
 
 	<category id="ldap" icon="ldap.png" />
@@ -16,7 +16,8 @@
     <input name="scope" type="java.lang.String" defaultValue="subtree" mandatory="true" />
     <input name="filter" type="java.lang.String" defaultValue="" mandatory="true" />
     <input name="attributes" type="java.lang.String" defaultValue="" mandatory="true" />
-    <input name="sizeLimit" type="java.lang.Long" defaultValue="500" mandatory="true" />
+    <input name="sizeLimit" type="java.lang.Long" defaultValue="500" mandatory="false" />
+    <input name="pageSize" type="java.lang.Long" defaultValue="500" mandatory="false" />
     <input name="timeLimit" type="java.lang.Long" defaultValue="1" mandatory="true" />
     <input name="referralHandling" type="java.lang.String" defaultValue="ignore" mandatory="true" />
     <input name="derefAliases" type="java.lang.String" defaultValue="ALWAYS" mandatory="true" />
@@ -45,6 +46,7 @@
             <items>SUBTREE</items>
         </widget>
         <widget id="sizeLimit" inputName="sizeLimit" xsi:type="definition:Text" />
+        <widget id="pageSize" inputName="pageSize" xsi:type="definition:Text" />
         <widget id="timeLimit" inputName="timeLimit" xsi:type="definition:Text" />
         <widget id="referralHandling" inputName="referralHandling" xsi:type="definition:Select" readOnly="true" >
             <items>ignore</items>
