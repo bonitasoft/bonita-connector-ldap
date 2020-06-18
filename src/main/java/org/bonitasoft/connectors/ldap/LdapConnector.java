@@ -30,8 +30,11 @@ import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
+import javax.naming.ldap.Control;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.PagedResultsControl;
+import javax.naming.ldap.PagedResultsResponseControl;
 import javax.naming.ldap.StartTlsRequest;
 import javax.naming.ldap.StartTlsResponse;
 
@@ -57,6 +60,7 @@ public class LdapConnector extends AbstractConnector {
     public static String FILTER = "filter";
     public static String ATTRIBUTES = "attributes";
     public static String SIZE_LIMIT = "sizeLimit";
+    public static String PAGE_SIZE = "pageSize";
     public static String TIME_LIMIT = "timeLimit";
     public static String REFERRAL_HANDLING = "referralHandling";
     public static String DEREF_ALIASES = "derefAliases";
@@ -104,6 +108,7 @@ public class LdapConnector extends AbstractConnector {
     private LdapDereferencingAlias derefAliases = LdapDereferencingAlias.ALWAYS;
     private String[] attributes = null;
     private Long sizeLimit = 0l;
+    private Long pageSize = 0l;
     private Integer timeLimit = 0;
     private String referralHandling = "ignore";
 
@@ -156,6 +161,10 @@ public class LdapConnector extends AbstractConnector {
 
     public long getSizeLimit() {
         return sizeLimit;
+    }
+
+    public long getPageSize() {
+        return pageSize;
     }
 
     public int getTimeLimit() {
@@ -275,6 +284,18 @@ public class LdapConnector extends AbstractConnector {
         }
     }
 
+    public void setPageSize(final long pageSize) {
+        this.pageSize = pageSize;
+    }
+
+    public void setPageSize(final Long pageSize) {
+        if (pageSize == null) {
+            setPageSize(Long.MIN_VALUE);
+        } else {
+            setPageSize(pageSize.longValue());
+        }
+    }
+
     /**
      * Sets the time-limit during a search in seconds.
      */
@@ -309,6 +330,7 @@ public class LdapConnector extends AbstractConnector {
         setFilter((String) parameters.get(FILTER));
         setAttributes((String) parameters.get(ATTRIBUTES));
         setSizeLimit((Long) parameters.get(SIZE_LIMIT));
+        setPageSize((Long) parameters.get(PAGE_SIZE));
         setTimeLimit((Long) parameters.get(TIME_LIMIT));
         setReferralHandling((String) parameters.get(REFERRAL_HANDLING));
         setDerefAliases((String) parameters.get(DEREF_ALIASES));
@@ -360,38 +382,10 @@ public class LdapConnector extends AbstractConnector {
             ctls.setCountLimit(getSizeLimit());
             ctls.setReturningAttributes(getAttributes());
             ctls.setSearchScope(getScope().value());
-            final NamingEnumeration<SearchResult> answer = ctx.search(getBaseObject(), getFilter(), ctls);
-            long count = getSizeLimit();
-            // count is useful in case of the size-limit is defined
-            // the search method does not care about size-limit. It returns all entries
-            // which match with the filter.
-            if (count == 0) {
-                count = Long.MAX_VALUE;
-            }
-            result = new ArrayList<List<LdapAttribute>>();
-            while (count > 0 && answer.hasMore()) {
-                final SearchResult sr = answer.next();
-                count--;
-                final Attributes attribs = sr.getAttributes();
-                final NamingEnumeration<? extends Attribute> enume = attribs.getAll();
-                final List<LdapAttribute> elements = new ArrayList<LdapAttribute>();
-                while (enume.hasMore()) {
-                    final Attribute attribute = enume.next();
-                    final NamingEnumeration<?> all = attribute.getAll();
-                    while (all.hasMore()) {
-                        final Object key = all.next();
-                        String value;
-                        if (key instanceof byte[]) {
-                            value = new String((byte[]) key, "UTF-8");
-                        } else {
-                            value = key.toString();
-                        }
-                        elements.add(new LdapAttribute(attribute.getID(), value));
-                    }
-                }
-                if (!elements.isEmpty()) {
-                    result.add(elements);
-                }
+            if (getPageSize() > 0) {
+                doPagedSearch(ctx, ctls);
+            } else {
+                doNonPagedSearch(ctx, ctls);
             }
             setOutputParameter(LDAP_ATTRIBUTE_LIST, result);
         } catch (final UnsupportedEncodingException e) {
@@ -416,6 +410,69 @@ public class LdapConnector extends AbstractConnector {
             }
         }
 
+    }
+
+    private void addSearchResult(SearchResult sr) throws NamingException, UnsupportedEncodingException {
+        final Attributes attribs = sr.getAttributes();
+        final NamingEnumeration<? extends Attribute> enume = attribs.getAll();
+        final List<LdapAttribute> elements = new ArrayList<LdapAttribute>();
+        while (enume.hasMore()) {
+            final Attribute attribute = enume.next();
+            final NamingEnumeration<?> all = attribute.getAll();
+            while (all.hasMore()) {
+                final Object key = all.next();
+                String value;
+                if (key instanceof byte[]) {
+                    value = new String((byte[]) key, "UTF-8");
+                } else {
+                    value = key.toString();
+                }
+                elements.add(new LdapAttribute(attribute.getID(), value));
+            }
+        }
+        if (!elements.isEmpty()) {
+            result.add(elements);
+        }
+    }
+
+    private void doNonPagedSearch(LdapContext ctx, SearchControls ctls) throws NamingException, UnsupportedEncodingException {
+        final NamingEnumeration<SearchResult> answer = ctx.search(getBaseObject(), getFilter(), ctls);
+        long count = getSizeLimit();
+        // count is useful in case of the size-limit is defined
+        // the search method does not care about size-limit. It returns all entries
+        // which match with the filter.
+        if (count == 0) {
+            count = Long.MAX_VALUE;
+        }
+        result = new ArrayList<List<LdapAttribute>>();
+        while (count > 0 && answer.hasMore()) {
+            final SearchResult sr = answer.next();
+            count--;
+            addSearchResult(sr);
+        }
+    }
+
+    private void doPagedSearch(LdapContext ctx, SearchControls ctls) throws NamingException, IOException {
+        result = new ArrayList<List<LdapAttribute>>();
+        byte[] cookie = null;
+        ctx.setRequestControls(new Control[] {new PagedResultsControl((int) getPageSize(), Control.NONCRITICAL)});
+        do {
+            NamingEnumeration<SearchResult> answer = ctx.search(getBaseObject(), getFilter(), ctls);
+            while (answer.hasMoreElements()) {
+                final SearchResult sr = answer.next();
+                addSearchResult(sr);
+            }
+            Control[] controls = ctx.getResponseControls();
+            if (controls != null) {
+                for (Control control : controls) {
+                    if (control instanceof PagedResultsResponseControl) {
+                        PagedResultsResponseControl prrc = (PagedResultsResponseControl) control;
+                        cookie = prrc.getCookie();
+                    }
+                }
+            }
+            ctx.setRequestControls(new Control[] { new PagedResultsControl((int) getPageSize(), cookie, Control.CRITICAL) });
+        } while (cookie != null);
     }
 
     @Override
