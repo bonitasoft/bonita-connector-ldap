@@ -1,56 +1,37 @@
-/**
- * Copyright (C) 2009-2014 BonitaSoft S.A.
- * BonitaSoft, 32 rue Gustave Eiffel - 38000 Grenoble
+/*
+ * Copyright (C) 2009 - 2020 Bonitasoft S.A.
+ * Bonitasoft, 32 rue Gustave Eiffel - 38000 Grenoble
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2.0 of the License, or
  * (at your option) any later version.
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 package org.bonitasoft.connectors.ldap;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.assertj.core.api.Assertions;
 import org.bonitasoft.engine.connector.ConnectorValidationException;
 import org.bonitasoft.engine.exception.BonitaException;
+import org.junit.jupiter.api.Test;
 
-import junit.framework.TestCase;
-
-public class LdapConnectorTest extends TestCase {
-
-    private LdapConnector connector;
-    protected static final Logger LOG = Logger.getLogger(LdapConnectorTest.class.getName());
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        if (LdapConnectorTest.LOG.isLoggable(Level.WARNING)) {
-            LdapConnectorTest.LOG.warning(
-                    "======== Starting test: " + this.getClass().getName() + "." + this.getName() + "() ==========");
-        }
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        if (LdapConnectorTest.LOG.isLoggable(Level.WARNING)) {
-            LdapConnectorTest.LOG.warning("======== Ending test: " + this.getName() + " ==========");
-        }
-        connector = null;
-        super.tearDown();
-    }
+class LdapConnectorTest {
 
     private LdapConnector getBasicSettings() {
-        connector = new LdapConnector();
+        LdapConnector connector = new LdapConnector();
         connector.setHost("localhost");
         connector.setProtocol(LdapProtocol.LDAP);
         connector.setBaseObject("ou=people,dc=bonita,dc=org");
@@ -58,148 +39,115 @@ public class LdapConnectorTest extends TestCase {
         return connector;
     }
 
-    public void testValidate() {
-        connector = new LdapConnector();
-        try {
-            connector.validateInputParameters();
-            fail("Should get 4 errors");
-        } catch (final ConnectorValidationException e) {
+    @Test
+    void testValidateMandatoryParameters() {
+        LdapConnector connector = new LdapConnector();
 
-        }
-
-        connector.setHost("mylocalhost");
-        try {
-            connector.validateInputParameters();
-            fail("Should get 3 errors");
-        } catch (final ConnectorValidationException e) {
-
-        }
-
-        connector.setProtocol(LdapProtocol.LDAP);
-        try {
-            connector.validateInputParameters();
-            fail("Should get 2 errors");
-        } catch (final ConnectorValidationException e) {
-
-        }
-
-        connector.setBaseObject("dc=mydomain,dc=com");
-        try {
-            connector.validateInputParameters();
-            fail("Should get 1 error");
-        } catch (final ConnectorValidationException e) {
-        }
-
-        connector.setFilter("(cn=Tom*)");
-        // All required fields were set
-        try {
-            connector.validateInputParameters();
-        } catch (final ConnectorValidationException e) {
-            fail("Should not fail as all parameters are set");
-        }
-
-        connector.setUserName("What I want");
-        connector.setPassword(null);
-        try {
-            connector.validateInputParameters();
-            fail("Should get 1 error");
-        } catch (final ConnectorValidationException e) {
-        }
-
+        ConnectorValidationException exception = assertThrows(ConnectorValidationException.class,
+                () -> connector.validateInputParameters());
+        assertThat(exception).hasMessageContaining("host cannot be empty!")
+                .hasMessageContaining("baseObject cannot be empty!")
+                .hasMessageContaining("filter cannot be empty!")
+                .hasMessageContaining("protocol cannot be null");
+    }
+    
+    @Test
+    void testMissingPassword() throws ConnectorValidationException {
+        LdapConnector connector = getBasicSettings();
         connector.setUserName(null);
         connector.setPassword("What I want");
-        try {
-            connector.validateInputParameters();
-            fail("Should get 1 error");
-        } catch (final ConnectorValidationException e) {
-        }
-
-        connector.setUserName("");
-        connector.setPassword("");
-        try {
-            connector.validateInputParameters();
-        } catch (final ConnectorValidationException e) {
-            fail("Should not fail as all parameters are set");
-        }
-
-        connector.setUserName("What I want");
-        connector.setPassword("What I want");
-
-        try {
-            connector.validateInputParameters();
-        } catch (final ConnectorValidationException e) {
-            fail("Should not fail as all parameters are set");
-        }
-
+        
+        ConnectorValidationException exception = assertThrows(ConnectorValidationException.class,
+                () -> connector.validateInputParameters());
+        assertThat(exception).hasMessageContaining("username cannot be empty!");
+    }
+    
+    @Test
+    void testMissingUsername() throws ConnectorValidationException {
+        LdapConnector connector = getBasicSettings();
         connector.setUserName("What I want");
         connector.setPassword("pwd");
-        try {
-            connector.validateInputParameters();
-        } catch (final ConnectorValidationException e) {
-            fail("Should not fail as all parameters are set");
-        }
+        assertDoesNotThrow(() -> connector.validateInputParameters());
+    }
+    
+    @Test
+    void testValidUsernameAndPassword() throws ConnectorValidationException {
+        LdapConnector connector = getBasicSettings();
+        connector.setUserName("What I want");
+        connector.setPassword(null);
+        
+        ConnectorValidationException exception = assertThrows(ConnectorValidationException.class,
+                () -> connector.validateInputParameters());
+        assertThat(exception).hasMessageContaining("password cannot be empty!");
     }
 
-    public void testValidateValues() throws ConnectorValidationException {
-        connector = getBasicSettings();
+    @Test
+    void testValidInputs() throws ConnectorValidationException {
+        LdapConnector connector = getBasicSettings();
         connector.validateInputParameters();
     }
 
-    public void testSetNullHost() {
-        connector = getBasicSettings();
+    @Test
+    void testSetNullHost() {
+        LdapConnector connector = getBasicSettings();
         connector.setHost(null);
         try {
             connector.validateInputParameters();
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("host"));
+            assertThat(e).hasMessageContaining("host cannot be empty!");
         }
     }
 
-    public void testSetEmptyHost() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetEmptyHost() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setHost("");
         try {
             connector.validateInputParameters();
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("host"));
+            assertThat(e).hasMessageContaining("host cannot be empty!");
         }
     }
 
-    public void testSetPortWithLessThanRange() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetPortWithLessThanRange() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setPort(-1);
 
         try {
             connector.validateInputParameters();
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("port"));
+            assertThat(e).hasMessageContaining("port cannot be less than 0!");
         }
     }
 
-    public void testSetPortWithGreaterThanRange() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetPortWithGreaterThanRange() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setPort(65536);
 
         try {
             connector.validateInputParameters();
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("port"));
+            assertThat(e).hasMessageContaining("port cannot be greater than 65535!");
         }
     }
 
-    public void testSetNullPort() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetNullPort() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setPort(null);
 
         try {
             connector.validateInputParameters();
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("port"));
+            assertThat(e).hasMessageContaining("port cannot be less than 0!");
         }
     }
 
-    public void testSetProtocol() {
-        connector = getBasicSettings();
+    @Test
+    void testSetProtocol() {
+        LdapConnector connector = getBasicSettings();
         connector.setProtocol("LDAP");
         assertEquals(LdapProtocol.LDAP, connector.getProtocol());
         connector.setProtocol("LDAPS");
@@ -215,20 +163,21 @@ public class LdapConnectorTest extends TestCase {
         assertEquals(LdapProtocol.TLS, connector.getProtocol());
     }
 
-    public void testSetNullProtocol() throws BonitaException {
-        connector = getBasicSettings();
-        final LdapProtocol protocol = null;
-        connector.setProtocol(protocol);
+    @Test
+    void testSetNullProtocol() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
+        connector.setProtocol((LdapProtocol) null);
 
         try {
             connector.validateInputParameters();
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("protocol"));
+            assertThat(e).hasMessageContaining("protocol cannot be null");
         }
     }
 
-    public void testSetNullStringProtocol() throws ConnectorValidationException {
-        connector = getBasicSettings();
+    @Test
+    void testSetNullStringProtocol() throws ConnectorValidationException {
+        LdapConnector connector = getBasicSettings();
         final String protocol = null;
         connector.setProtocol(protocol);
         connector.validateInputParameters();
@@ -236,28 +185,31 @@ public class LdapConnectorTest extends TestCase {
         assertEquals(LdapProtocol.LDAPS, connector.getProtocol());
     }
 
-    public void testSetBadProtocol() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetBadProtocol() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setProtocol("HTTP");
 
         connector.validateInputParameters();
         assertEquals(LdapProtocol.LDAPS, connector.getProtocol());
     }
 
-    public void testSetBaseObject() {
-        connector = getBasicSettings();
+    @Test
+    void testSetBaseObject() {
+        LdapConnector connector = getBasicSettings();
         connector.setBaseObject(null);
 
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("baseObject"));
+            assertThat(e).hasMessageContaining("baseObject cannot be empty!");
         }
     }
 
-    public void testSetScope() {
-        connector = new LdapConnector();
+    @Test
+    void testSetScope() {
+        LdapConnector connector = new LdapConnector();
         connector.setScope("BASE");
         assertEquals(LdapScope.BASE, connector.getScope());
         connector.setScope("ONELEVEL");
@@ -273,141 +225,139 @@ public class LdapConnectorTest extends TestCase {
         assertEquals(LdapScope.SUBTREE, connector.getScope());
     }
 
-    public void testSetBadScope() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetBadScope() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setScope("ALLTREE");
 
         connector.validateInputParameters();
         assertEquals(LdapScope.ONELEVEL, connector.getScope());
     }
 
-    public void testSetNullScope() {
-        connector = getBasicSettings();
-        final LdapScope scope = null;
-        connector.setScope(scope);
+    @Test
+    void testSetNullScope() {
+        LdapConnector connector = getBasicSettings();
+        connector.setScope((LdapScope) null);
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("scope"));
+            assertThat(e).hasMessageContaining("scope cannot be null");
         }
     }
 
-    public void testSetNullStringScope() throws ConnectorValidationException {
-        connector = getBasicSettings();
+    @Test
+    void testSetNullStringScope() throws ConnectorValidationException {
+        LdapConnector connector = getBasicSettings();
         final String scope = null;
         connector.setScope(scope);
         connector.validateInputParameters();
         assertEquals(LdapScope.ONELEVEL, connector.getScope());
     }
 
-    public void testSetNullAttributes() throws ConnectorValidationException {
-        connector = getBasicSettings();
+    @Test
+    void testSetNullAttributes() throws ConnectorValidationException {
+        LdapConnector connector = getBasicSettings();
         final String[] attribs = null;
         connector.setAttributes(attribs);
         connector.validateInputParameters();
     }
 
-    public void testSetAttributes() throws ConnectorValidationException {
-        connector = getBasicSettings();
+    @Test
+    void testSetAttributes() throws ConnectorValidationException {
+        LdapConnector connector = getBasicSettings();
         connector.setAttributes("dn,objectclass ,ou");
         connector.validateInputParameters();
 
         Assertions.assertThat(connector.getAttributes()).contains("dn", "objectclass", "ou");
     }
 
-    public void testSetNullSizeLimit() {
-        connector = getBasicSettings();
+    @Test
+    void testSetNullSizeLimit() {
+        LdapConnector connector = getBasicSettings();
         connector.setSizeLimit(null);
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("sizeLimit"));
+            assertThat(e).hasMessageContaining("sizeLimit cannot be null or negative");
         }
     }
 
-    public void testSetNegativeLongSizeLimit() throws BonitaException {
-        connector = getBasicSettings();
-        connector.setSizeLimit(new Long(-1L));
-
-        try {
-            connector.validateInputParameters();
-            fail("Should fail");
-        } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("sizeLimit"));
-        }
-    }
-
-    public void testSetNegativeSizeLimit() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetNegativeLongSizeLimit() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setSizeLimit(-1L);
 
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("sizeLimit"));
+            assertThat(e).hasMessageContaining("sizeLimit cannot be null or negative");
         }
     }
 
-    public void testSetNullFilter() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetNullFilter() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setFilter(null);
 
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("filter"));
+            assertThat(e).hasMessageContaining("filter cannot be empty!");
         }
     }
 
-    public void testSetTimeLimitWithANegativeValue() {
-        connector = getBasicSettings();
+    @Test
+    void testSetTimeLimitWithANegativeValue() {
+        LdapConnector connector = getBasicSettings();
         connector.setTimeLimit(-4);
 
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("timeLimit"));
+            assertThat(e).hasMessageContaining("timeLimit cannot be null or negative");
         }
     }
 
-    public void testSetNullTimeLimit() throws BonitaException {
-        connector = getBasicSettings();
+    void testSetNullTimeLimit() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setTimeLimit(null);
 
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("timeLimit"));
+            assertThat(e).hasMessageContaining("timeLimit cannot be null or negative");
         }
     }
 
-    public void testSetNullReferralHandling() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetNullReferralHandling() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setReferralHandling(null);
 
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("referralHandling"));
+            assertThat(e).hasMessageContaining("referralHandling is null!");
         }
     }
 
-    public void testSetBadReferralHandling() {
-        connector = getBasicSettings();
+    @Test
+    void testSetBadReferralHandling() {
+        LdapConnector connector = getBasicSettings();
         connector.setReferralHandling("always");
 
         try {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("referralHandling"));
+            assertThat(e).hasMessageContaining("referralHandling must be either ignore or follow!");
         }
 
         connector = getBasicSettings();
@@ -417,7 +367,7 @@ public class LdapConnectorTest extends TestCase {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("referralHandling"));
+            assertThat(e).hasMessageContaining("referralHandling must be either ignore or follow!");
         }
 
         connector = getBasicSettings();
@@ -426,18 +376,20 @@ public class LdapConnectorTest extends TestCase {
             connector.validateInputParameters();
             fail("Should fail");
         } catch (final ConnectorValidationException e) {
-            assertThat(e.getMessage(), containsString("referralHandling"));
+            assertThat(e).hasMessageContaining("referralHandling must be either ignore or follow!");
         }
     }
 
-    public void testSetDereferencingAliasFromString() throws Exception {
-        connector = getBasicSettings();
+    @Test
+    void testSetDereferencingAliasFromString() throws Exception {
+        LdapConnector connector = getBasicSettings();
         connector.setDerefAliases("never");
-        assertEquals(connector.getDerefAliases(), LdapDereferencingAlias.NEVER);
+        assertEquals(LdapDereferencingAlias.NEVER, connector.getDerefAliases());
     }
 
-    public void testSetReferralHandling() throws BonitaException {
-        connector = getBasicSettings();
+    @Test
+    void testSetReferralHandling() throws BonitaException {
+        LdapConnector connector = getBasicSettings();
         connector.setReferralHandling("ignore");
         connector.validateInputParameters();
         connector.setReferralHandling("follow");

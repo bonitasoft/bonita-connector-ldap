@@ -1,22 +1,25 @@
-/**
- * Copyright (C) 2009 BonitaSoft S.A.
- * BonitaSoft, 31 rue Gustave Eiffel - 38000 Grenoble
+/*
+ * Copyright (C) 2009 - 2020 Bonitasoft S.A.
+ * Bonitasoft, 32 rue Gustave Eiffel - 38000 Grenoble
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2.0 of the License, or
  * (at your option) any later version.
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 package org.bonitasoft.connectors.ldap;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -41,6 +44,8 @@ import javax.naming.ldap.StartTlsResponse;
 import org.bonitasoft.engine.connector.AbstractConnector;
 import org.bonitasoft.engine.connector.ConnectorException;
 import org.bonitasoft.engine.connector.ConnectorValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This connector provides an LDAP service of querying directory service. This connector does the search operation.
@@ -48,30 +53,32 @@ import org.bonitasoft.engine.connector.ConnectorValidationException;
  * @author Matthieu Chaffotte
  */
 public class LdapConnector extends AbstractConnector {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(LdapConnector.class);
 
     // Input
-    public static String HOST = "host";
-    public static String PORT = "port";
-    public static String PROTOCOL = "protocol";
-    public static String USERNAME = "username";
-    public static String PASSWORD = "password";
-    public static String BASE_OBJECT = "baseObject";
-    public static String SCOPE = "scope";
-    public static String FILTER = "filter";
-    public static String ATTRIBUTES = "attributes";
-    public static String SIZE_LIMIT = "sizeLimit";
-    public static String PAGE_SIZE = "pageSize";
-    public static String TIME_LIMIT = "timeLimit";
-    public static String REFERRAL_HANDLING = "referralHandling";
-    public static String DEREF_ALIASES = "derefAliases";
+    public static final String HOST_PARAMETER = "host";
+    public static final String PORT_PARAMETER = "port";
+    public static final String PROTOCOL_PARAMETER = "protocol";
+    public static final String USERNAME_PARAMETER = "username";
+    public static final String PASSWORD_PARAMETER = "password";
+    public static final String BASE_OBJECT_PARAMETER = "baseObject";
+    public static final String SCOPE_PARAMETER = "scope";
+    public static final String FILTER_PARAMETER = "filter";
+    public static final String ATTRIBUTES_PARAMETER = "attributes";
+    public static final String SIZE_LIMIT_PARAMETER = "sizeLimit";
+    public static final String PAGE_SIZE_PARAMETER = "pageSize";
+    public static final String TIME_LIMIT_PARAMETER = "timeLimit";
+    public static final String REFERRAL_HANDLING_PARAMETER = "referralHandling";
+    public static final String DEREF_ALIASES_PARAMETER = "derefAliases";
 
     // Output
-    public static String LDAP_ATTRIBUTE_LIST = "ldapAttributeList";
+    public static final String LDAP_ATTRIBUTE_LIST_OUTPUT = "ldapAttributeList";
 
     /**
      * The host name of the directory service.
      */
-    private String host = null;
+    private String host;
 
     /**
      * The port number of the directory service.
@@ -81,39 +88,30 @@ public class LdapConnector extends AbstractConnector {
     /**
      * The protocol used by the directory service. It can be LDAP, LDAPS(SSL) or TLS.
      */
-    private LdapProtocol protocol = null;
+    private LdapProtocol protocol;
 
     /**
      * The user name if authentication is needed.
      */
-    private String userName = null;
+    private String userName;
 
     /**
      * The password if authentication is needed.
      */
-    private String password = null;
-
+    private String password;
     private String certificatePath;
-
-    /**
-     *
-     */
-    private String baseObject = null;
-
-    /**
-     *
-     */
+    private String baseObject;
     private LdapScope scope = LdapScope.BASE;
-    private String filter = null;
+    private String filter;
     private LdapDereferencingAlias derefAliases = LdapDereferencingAlias.ALWAYS;
-    private String[] attributes = null;
+    private String[] attributes;
     private Long sizeLimit = 0l;
     private Long pageSize = 0l;
     private Integer timeLimit = 0;
     private String referralHandling = "ignore";
 
     // output
-    private List<List<LdapAttribute>> result = new ArrayList<List<LdapAttribute>>();
+    private List<List<LdapAttribute>> result = new ArrayList<>();
 
     private String getHost() {
         return host;
@@ -298,6 +296,7 @@ public class LdapConnector extends AbstractConnector {
 
     /**
      * Sets the time-limit during a search in seconds.
+     * @param timeLimit, the search time limit in seconds
      */
     public void setTimeLimit(final int timeLimit) {
         this.timeLimit = timeLimit;
@@ -305,6 +304,7 @@ public class LdapConnector extends AbstractConnector {
 
     /**
      * Sets the time-limit during a search in seconds.
+     * @param timeLimit, the search time limit in seconds
      */
     public void setTimeLimit(final Long timeLimit) {
         if (timeLimit == null) {
@@ -320,24 +320,24 @@ public class LdapConnector extends AbstractConnector {
 
     @Override
     public void setInputParameters(Map<String, Object> parameters) {
-        setHost((String) parameters.get(HOST));
-        setPort((Integer) parameters.get(PORT));
-        setProtocol((String) parameters.get(PROTOCOL));
-        setUserName((String) parameters.get(USERNAME));
-        setPassword((String) parameters.get(PASSWORD));
-        setBaseObject((String) parameters.get(BASE_OBJECT));
-        setScope((String) parameters.get(SCOPE));
-        setFilter((String) parameters.get(FILTER));
-        setAttributes((String) parameters.get(ATTRIBUTES));
-        setSizeLimit((Long) parameters.get(SIZE_LIMIT));
-        setPageSize((Long) parameters.get(PAGE_SIZE));
-        setTimeLimit((Long) parameters.get(TIME_LIMIT));
-        setReferralHandling((String) parameters.get(REFERRAL_HANDLING));
-        setDerefAliases((String) parameters.get(DEREF_ALIASES));
+        setHost((String) parameters.get(HOST_PARAMETER));
+        setPort((Integer) parameters.get(PORT_PARAMETER));
+        setProtocol((String) parameters.get(PROTOCOL_PARAMETER));
+        setUserName((String) parameters.get(USERNAME_PARAMETER));
+        setPassword((String) parameters.get(PASSWORD_PARAMETER));
+        setBaseObject((String) parameters.get(BASE_OBJECT_PARAMETER));
+        setScope((String) parameters.get(SCOPE_PARAMETER));
+        setFilter((String) parameters.get(FILTER_PARAMETER));
+        setAttributes((String) parameters.get(ATTRIBUTES_PARAMETER));
+        setSizeLimit((Long) parameters.get(SIZE_LIMIT_PARAMETER));
+        setPageSize((Long) parameters.get(PAGE_SIZE_PARAMETER));
+        setTimeLimit((Long) parameters.get(TIME_LIMIT_PARAMETER));
+        setReferralHandling((String) parameters.get(REFERRAL_HANDLING_PARAMETER));
+        setDerefAliases((String) parameters.get(DEREF_ALIASES_PARAMETER));
     }
 
     private Hashtable<String, String> getEnvironment() {
-        final Hashtable<String, String> environment = new Hashtable<String, String>();
+        final Hashtable<String, String> environment = new Hashtable<>();
         environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         environment.put(Context.PROVIDER_URL, "ldap://" + getHost() + ":" + getPort());
         if (getProtocol().equals(LdapProtocol.LDAPS)) {
@@ -387,35 +387,31 @@ public class LdapConnector extends AbstractConnector {
             } else {
                 doNonPagedSearch(ctx, ctls);
             }
-            setOutputParameter(LDAP_ATTRIBUTE_LIST, result);
-        } catch (final UnsupportedEncodingException e) {
-            throw new ConnectorException(e);
-        } catch (final IOException e) {
-            throw new ConnectorException(e);
-        } catch (final NamingException e) {
+            setOutputParameter(LDAP_ATTRIBUTE_LIST_OUTPUT, result);
+        } catch(IOException | NamingException e) {
             throw new ConnectorException(e);
         } finally {
-            if (LdapProtocol.TLS.equals(getProtocol()) && response != null) {
+            if (response != null) {
                 try {
                     response.close();
                 } catch (final IOException e) {
-                    throw new ConnectorException(e);
+                    LOGGER.error("Error closing the StartTlsResponse", e);
                 }
             }
 
             try {
                 ctx.close();
             } catch (final NamingException e) {
-                throw new ConnectorException(e);
+                LOGGER.error("Error closing the LDAP context", e);
             }
         }
 
     }
 
-    private void addSearchResult(SearchResult sr) throws NamingException, UnsupportedEncodingException {
+    private void addSearchResult(SearchResult sr) throws NamingException {
         final Attributes attribs = sr.getAttributes();
         final NamingEnumeration<? extends Attribute> enume = attribs.getAll();
-        final List<LdapAttribute> elements = new ArrayList<LdapAttribute>();
+        final List<LdapAttribute> elements = new ArrayList<>();
         while (enume.hasMore()) {
             final Attribute attribute = enume.next();
             final NamingEnumeration<?> all = attribute.getAll();
@@ -423,7 +419,7 @@ public class LdapConnector extends AbstractConnector {
                 final Object key = all.next();
                 String value;
                 if (key instanceof byte[]) {
-                    value = new String((byte[]) key, "UTF-8");
+                    value = new String((byte[]) key, StandardCharsets.UTF_8);
                 } else {
                     value = key.toString();
                 }
@@ -435,7 +431,7 @@ public class LdapConnector extends AbstractConnector {
         }
     }
 
-    private void doNonPagedSearch(LdapContext ctx, SearchControls ctls) throws NamingException, UnsupportedEncodingException {
+    private void doNonPagedSearch(LdapContext ctx, SearchControls ctls) throws NamingException {
         final NamingEnumeration<SearchResult> answer = ctx.search(getBaseObject(), getFilter(), ctls);
         long count = getSizeLimit();
         // count is useful in case of the size-limit is defined
@@ -444,7 +440,7 @@ public class LdapConnector extends AbstractConnector {
         if (count == 0) {
             count = Long.MAX_VALUE;
         }
-        result = new ArrayList<List<LdapAttribute>>();
+        result = new ArrayList<>();
         while (count > 0 && answer.hasMore()) {
             final SearchResult sr = answer.next();
             count--;
@@ -453,7 +449,7 @@ public class LdapConnector extends AbstractConnector {
     }
 
     private void doPagedSearch(LdapContext ctx, SearchControls ctls) throws NamingException, IOException {
-        result = new ArrayList<List<LdapAttribute>>();
+        result = new ArrayList<>();
         byte[] cookie = null;
         ctx.setRequestControls(new Control[] {new PagedResultsControl((int) getPageSize(), Control.NONCRITICAL)});
         do {
@@ -477,18 +473,18 @@ public class LdapConnector extends AbstractConnector {
 
     @Override
     public void validateInputParameters() throws ConnectorValidationException {
-        final List<String> errors = new ArrayList<String>();
+        final List<String> errors = new ArrayList<>();
         if (host == null || host.length() == 0) {
             errors.add("host cannot be empty!");
         }
 
         if (userName == null || userName.length() == 0) {
             if (password != null && password.length() != 0) {
-                errors.add("password cannot be empty!");
+                errors.add("username cannot be empty!");
             }
         } else {
             if (password == null || password.length() == 0) {
-                errors.add("username cannot be empty!");
+                errors.add("password cannot be empty!");
             }
         }
 
@@ -555,13 +551,13 @@ public class LdapConnector extends AbstractConnector {
         } else if (!getReferralHandling().equals("ignore") && !getReferralHandling().equals("follow")) {
             errors.add("referralHandling must be either ignore or follow!");
         }
-        final String derefAliases = (String) getInputParameter(DEREF_ALIASES);
-        if (derefAliases != null && !derefAliases.isEmpty()) {
+        final String derefAliasesInput = (String) getInputParameter(DEREF_ALIASES_PARAMETER);
+        if (derefAliasesInput != null && !derefAliasesInput.isEmpty()) {
             try {
-                LdapDereferencingAlias.valueOf(derefAliases);
+                LdapDereferencingAlias.valueOf(derefAliasesInput);
             } catch (final IllegalArgumentException e) {
                 throw new ConnectorValidationException(
-                        String.format("%s is not a valid dereferencing alias.", derefAliases));
+                        String.format("%s is not a valid dereferencing alias.", derefAliasesInput));
             }
         }
 
