@@ -44,7 +44,7 @@
         <connector-main-class>org.bonitasoft.connectors.ldap.LdapConnector</connector-main-class>
 
         <!-- Bonita -->
-        <bonita.engine.version>7.13.0</bonita.engine.version>
+        <bonita.engine.version>7.15.0</bonita.engine.version>
         <slf4j-api.version>1.7.36</slf4j-api.version>
 
         <!-- Tests -->
