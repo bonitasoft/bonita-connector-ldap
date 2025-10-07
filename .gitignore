@@ -9,8 +9,6 @@ target/
 log/
 !**/src/main/**
 !**/src/test/**
-# Maven Wrapper
-!.mvn/wrapper/maven-wrapper.jar
 
 ######################
 # Intellij
