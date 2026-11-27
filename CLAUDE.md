@@ -4,10 +4,10 @@
 
 - **Name**: Bonita LDAP Connector
 - **Artifact**: `org.bonitasoft.connectors:bonita-connector-ldap`
-- **Version**: 1.2.2-SNAPSHOT
+- **Version**: 2.0.0-SNAPSHOT (2.x targets Bonita 12+ / Java 17; Bonita 7.10 - 11.x use the 1.x versions)
 - **Description**: Bonita connector that performs LDAP directory search operations. Supports LDAP, LDAPS (SSL), and TLS protocols, paged results, and configurable scopes/filters.
 - **License**: GPL-2.0
-- **Tech stack**: Java 11, Maven, Bonita Engine 7.13.0, Java JNDI (`javax.naming`), SLF4J, JUnit 5, AssertJ
+- **Tech stack**: Java 17, Maven, Bonita runtime 12.0 (`bonita-runtime-bom`), Java JNDI (`javax.naming`), SLF4J 2 (provided by the runtime), JUnit 5, AssertJ
 
 ## Build Commands
 
